@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HCL Chatbot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .message.bot {
+            background: #e6f0ff;
+            /* light blue */
+            /* light blue */
+            align-self: flex-start;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #f4f6fa;
+            border-right: 1px solid #ddd;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .chat-list li {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .chat-list li:hover {
+            background: #e2e8f0;
+        }
+
+        .chat-list li.active {
+            background: #e0e7ff;
+            font-weight: bold;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 16px;
+            background: #003366;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: #d1e7dd;
+            align-self: flex-end;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background: #fff;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-right: 10px;
+        }
+
+        .chat-input button {
+            background: #003366;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-input button:hover {
+            background: #0051a3;
+        }
+
+        .chat-input svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .dots span {
+            animation: blink 1.4s infinite both;
+            font-size: 20px;
+            margin-right: 2px;
+            opacity: 0.2;
+        }
+
+        .dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+
+            0%,
+            80%,
+            100% {
+                opacity: 0.2;
+            }
+
+            40% {
+                opacity: 1;
+            }
+        }
+
+        .message.bot img {
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: block;
+            transition: transform 0.2s;
+        }
+
+        .message.bot img {
+            transition: transform 0.2s;
+        }
+
+        .message.bot img:hover {
+            transform: scale(1.05);
+        }
+
+        .message.bot ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .message.bot code {
+            background-color: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #2563eb;
+            width: 300px;
+            overflow: auto;
+            white-space: normal; /* allows wrapping */
+            word-wrap: break-word; /* breaks long words if needed */
+        }
+
+        .message.bot pre {
+            background-color: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #1A1F2C;
+        }
+
+        .message.bot a {
+            color: #003366;
+            text-decoration: none;
+        }
+
+        .message.bot a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <span>💬 Chats</span>
+                <button onclick="startNewChat()">+ New</button>
+            </div>
+            <ul id="chat-list" class="chat-list"></ul>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">HCL Software Chatbot</div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <form class="chat-input" onsubmit="sendMessage()">
+                <input type="text" id="user-input" placeholder="Type a message..." required />
+                <button id="send-btn" type="submit" title="Send Message">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path
+                            d="M3.4 20.6a1 1 0 0 0 1.2.1l4.9-2.7 2.7 2.7c.6.6 1.6.3 1.7-.6l3.4-17a1 1 0 0 0-1.2-1.2l-17 3.4c-.9.2-1.2 1.2-.6 1.7l2.7 2.7-2.7 4.9a1 1 0 0 0 .1 1.2l6 6z" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let sessions = JSON.parse(localStorage.getItem("chatSessions") || "{}");
+        // let currentChatId = localStorage.getItem("currentChatId");
+        const urlParams = new URLSearchParams(window.location.search);
+        currentChatId = urlParams.get("chatId") || localStorage.getItem("currentChatId");
+
+
+        const chatList = document.getElementById("chat-list");
+        const chatMessages = document.getElementById("chat-messages");
+        const userInput = document.getElementById("user-input");
+        const sendButton = document.getElementById("send-btn");
+
+        function saveSessions() {
+            localStorage.setItem("chatSessions", JSON.stringify(sessions));
+            localStorage.setItem("currentChatId", currentChatId);
+        }
+
+
+        function startNewChat() {
+            let now = new Date();
+            let name = "Chat " +
+                now.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' }) + " " +
+                now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            currentChatId = `chat-${Date.now()}`;
+            sessions[currentChatId] = { name: name.trim(), messages: [] };
+            saveSessions(); // <-- ✅
+
+            updateChatList();
+            loadChat(currentChatId);
+        }
+
+
+        function updateChatList() {
+            chatList.innerHTML = '';
+
+            const sortedEntries = Object.entries(sessions).reverse();
+
+            // 🔥 Set latest one as default if currentChatId is not defined
+            if (!currentChatId && sortedEntries.length > 0) {
+                currentChatId = sortedEntries[0][0];
+                saveSessions();
+            }
+
+            for (const [id, session] of sortedEntries) {
+                const li = document.createElement("li");
+                li.textContent = session.name;
+                if (id === currentChatId) li.classList.add("active");
+                li.onclick = () => {
+                    currentChatId = id;
+                    loadChat(id);
+                };
+                chatList.appendChild(li);
+            }
+        }
+
+
+
+        function loadChat(chatId) {
+            currentChatId = chatId;
+            chatMessages.innerHTML = "";
+            const chat = sessions[chatId];
+            chat.messages.forEach(msg => {
+                addMessage(msg.question, "user");
+                addMessage(msg.answer, "bot", msg.videos || [], msg.references || []);
+            });
+
+            updateChatList();
+
+            // 🔄 Update URL without reloading
+            history.pushState(null, "", `?chatId=${chatId}`);
+        }
+
+
+
+        function addMessage(text, role, videos = [], references = []) {
+            const div = document.createElement("div");
+            div.className = `message ${role}`;
+
+            if (role === "bot") {
+                div.innerHTML = marked.parse(text);
+
+                // ==== VIDEO CARDS ====
+                if (videos.length > 0) {
+                    const videoWrapper = document.createElement("div");
+                    videoWrapper.style.display = "flex";
+                    videoWrapper.style.flexWrap = "wrap";
+                    videoWrapper.style.gap = "12px";
+                    videoWrapper.style.marginTop = "20px";
+
+                    videos.forEach(video => {
+                        const card = document.createElement("div");
+                        card.style.width = "300px";
+                        card.style.cursor = "pointer";
+                        card.style.border = "1px solid #ddd";
+                        card.style.borderRadius = "8px";
+                        card.style.overflow = "hidden";
+                        card.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+                        card.style.transition = "box-shadow 0.2s ease-in-out";
+
+                        card.onmouseover = () => card.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.2)";
+                        card.onmouseleave = () => card.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+
+                        const videoContainer = document.createElement("div");
+                        videoContainer.style.position = "relative";
+                        videoContainer.style.height = "180px";
+                        videoContainer.style.backgroundColor = "#000";
+
+                        const thumbnail = document.createElement("div");
+                        thumbnail.style.height = "100%";
+                        thumbnail.style.backgroundImage = `url('https://img.youtube.com/vi/${extractYouTubeID(video.video_url)}/hqdefault.jpg')`;
+                        thumbnail.style.backgroundSize = "cover";
+                        thumbnail.style.backgroundPosition = "center";
+
+                        const playIcon = document.createElement("div");
+                        playIcon.innerHTML = "▶️";
+                        playIcon.style.position = "absolute";
+                        playIcon.style.top = "50%";
+                        playIcon.style.left = "50%";
+                        playIcon.style.transform = "translate(-50%, -50%)";
+                        playIcon.style.fontSize = "40px";
+                        playIcon.style.color = "#fff";
+                        playIcon.style.pointerEvents = "none";
+
+                        const iframe = document.createElement("iframe");
+                        iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(video.video_url)}?autoplay=1`;
+                        iframe.frameBorder = "0";
+                        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                        iframe.allowFullscreen = true;
+                        iframe.style.width = "100%";
+                        iframe.style.height = "180px";
+                        iframe.style.display = "none";
+
+                        videoContainer.appendChild(thumbnail);
+                        videoContainer.appendChild(playIcon);
+                        videoContainer.appendChild(iframe);
+                        card.appendChild(videoContainer);
+
+                        const content = document.createElement("div");
+                        content.style.padding = "10px";
+
+                        const title = document.createElement("div");
+                        title.textContent = video.title;
+                        title.style.fontWeight = "bold";
+                        title.style.marginBottom = "4px";
+
+                        const desc = document.createElement("div");
+                        desc.textContent = video.description;
+                        desc.style.fontSize = "14px";
+                        desc.style.color = "#555";
+
+                        content.appendChild(title);
+                        content.appendChild(desc);
+                        card.appendChild(content);
+
+                        card.addEventListener("click", () => {
+                            thumbnail.style.display = "none";
+                            playIcon.style.display = "none";
+                            iframe.style.display = "block";
+                        });
+
+                        videoWrapper.appendChild(card);
+                    });
+
+                    div.appendChild(videoWrapper);
+                }
+
+                // ==== REFERENCE CARDS ====
+                if (references.length > 0) {
+                    const refWrapper = document.createElement("div");
+                    refWrapper.style.display = "flex";
+                    refWrapper.style.flexWrap = "wrap";
+                    refWrapper.style.gap = "16px";
+                    refWrapper.style.marginTop = "20px";
+
+                    references.forEach(ref => {
+                        const card = document.createElement("div");
+                        card.style.width = "300px";
+                        card.style.padding = "12px";
+                        card.style.border = "1px solid #ddd";
+                        card.style.borderRadius = "8px";
+                        card.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+                        card.style.cursor = "pointer";
+                        card.style.transition = "box-shadow 0.2s ease-in-out";
+
+                        card.onmouseover = () => card.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.2)";
+                        card.onmouseleave = () => card.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+
+                        const title = document.createElement("div");
+                        title.textContent = ref.title;
+                        title.style.fontWeight = "bold";
+                        title.style.marginBottom = "4px";
+
+                        const desc = document.createElement("div");
+                        desc.textContent = ref.description;
+                        desc.style.fontSize = "14px";
+                        desc.style.color = "#555";
+                        desc.style.marginBottom = "8px";
+
+                        card.appendChild(title);
+                        card.appendChild(desc);
+
+                        card.addEventListener("click", () => {
+                            window.open(ref.reference_url, "_blank", "noopener noreferrer");
+                        });
+
+                        refWrapper.appendChild(card);
+                    });
+
+                    div.appendChild(refWrapper);
+                }
+
+            } else {
+                div.textContent = text;
+            }
+
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Helper: extract YouTube video ID from a full URL
+        function extractYouTubeID(url) {
+            const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+            return match ? match[1] : "";
+        }
+
+
+
+        function sendMessage() {
+            const query = userInput.value.trim();
+            if (!query || !currentChatId) return;
+
+            addMessage(query, "user");
+            userInput.value = "";
+
+            const session = sessions[currentChatId];
+            const last3 = session.messages.slice(-3);
+            const historyText = last3.map(h => `Q: ${h.question}\nA: ${h.answer}`).join("\n");
+
+            const payload = { query, history: historyText };
+
+            const loadingMsg = document.createElement("div");
+            loadingMsg.className = "message bot";
+            loadingMsg.innerHTML = `<span class="dots"><span>.</span><span>.</span><span>.</span></span>`;
+            chatMessages.appendChild(loadingMsg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+
+            fetch("http://192.168.1.140:3000/query/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    loadingMsg.remove();
+                    addMessage(data.answer, "bot", data.videos || [], data.references || []);
+                    session.messages.push({
+                        question: query,
+                        answer: data.answer,
+                        videos: data.videos || [],
+                        references: data.references || []
+                    });
+                    saveSessions();
+
+                })
+                .catch(err => {
+                    loadingMsg.remove();
+                    addMessage("Oops! Something went wrong while processing your request.", "bot");
+                    console.error(err);
+                });
+        }
+
+        sendButton.addEventListener("click", sendMessage);
+
+        // ✅ Fix Enter key sending
+        userInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Start initial chat
+        if (currentChatId && sessions[currentChatId]) {
+            updateChatList();
+            loadChat(currentChatId);
+        } else {
+            startNewChat();
+        }
+
+    </script>
+</body>
+
+</html>
