@@ -495,7 +495,7 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
 
-            fetch("http://192.168.1.140:3000/query/ask", {
+            fetch("http://localhost:3000/query/ask", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
